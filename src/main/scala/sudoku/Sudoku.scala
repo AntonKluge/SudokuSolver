@@ -52,9 +52,7 @@ case class Sudoku(sudoku: Array[Int]):
 
    private def validCollection(partSudoku: Iterator[Int]): Boolean =
       val mSet = scala.collection.mutable.Set[Int]()
-      partSudoku.forall(x => if x == 0 then true else if mSet(x) then false else {
-         mSet += x; true
-      })
+      partSudoku.forall(x => if x == 0 then true else if mSet(x) then false else {mSet += x; true})
 
    def update(field: Int, value: Int): Sudoku =
       sudoku.update(field, value)

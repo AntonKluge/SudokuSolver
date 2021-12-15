@@ -1,4 +1,5 @@
-import solver.{Backtracking, DancingLinks, ExactCover}
+
+import solver.{Backtracking, DancingLinks}
 import sudoku.Sudoku
 
 object Main extends App :
@@ -10,14 +11,28 @@ object Main extends App :
    val sudokuHell = new Sudoku("000040000\n100000060\n090807300\n006204030\n000090400\n020050000\n080302700\n000500000\n009000008")
    val sudokuAntiBruteForce = new Sudoku("000000000\n000003085\n001020000\n000507000\n004000100\n090000000\n500000073\n002010000\n000040009")
 
-   val lgs = DancingLinks(sudokuZeros).linkedGridString
-   val ecs = ExactCover(sudokuZeros).getExactCoverString
-   println(lgs)
-   if (lgs != ecs) throw IllegalArgumentException()
+   Seq(sudokuEasy, sudokuMedium, sudokuHard, sudokuHell).foreach { sudoku =>
 
-   val t1 = System.nanoTime
-   val solved = Backtracking(sudokuMedium).solve
-   val duration = (System.nanoTime - t1) / 1e9d
+      var t1 = System.nanoTime
+      val solved = Backtracking(sudoku).solve
+      var duration = (System.nanoTime - t1) / 1e9d
 
-   println("Took: " + duration + "s")
+      println("Took Backtracking: " + duration + "s")
+      println(solved)
+
+      t1 = System.nanoTime
+      val solved2 = DancingLinks(sudoku).solve
+      duration = (System.nanoTime - t1) / 1e9d
+
+      println("Took Dancing Links: " + duration + "s")
+      println(solved)
+
+      if solved.toString != solved2.toString then throw IllegalArgumentException()
+   }
+   
+   var t1 = System.nanoTime
+   val solved = DancingLinks(sudokuAntiBruteForce).solve
+   var duration = (System.nanoTime - t1) / 1e9d
+
+   println("Took Dancing Links: " + duration + "s")
    println(solved)

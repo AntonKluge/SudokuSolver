@@ -75,7 +75,7 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
 
       def seqHorizontal(): Seq[Node] = Iterator.iterate(right)(_.right).takeWhile(_ != this).toSeq
 
-      def seqVertical(): Seq[Node] =Iterator.iterate(lower)(_.lower).takeWhile(_ != this).toSeq
+      def seqVertical(): Seq[Node] = Iterator.iterate(lower)(_.lower).takeWhile(_ != this).toSeq
 
 
    /**
@@ -102,58 +102,65 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
    case class LinkedNode(constraint: Constraint, field: (Int, Int, Int)) extends Node() :
       constraint.linkLowest(this)
 
-   /**
-    *
-    * @return
-    */
+
    override def solve: Sudoku = updateSudoku(algorithmX().getOrElse(Seq.empty))
 
-
    /**
+    * Performs the algorithm X on a exact cover matrix.
     *
     * @param results the accumulated results, in the beginning start with a empty Seq.
-    * @return
+    * @return if found a Seq of Linked nodes for every row in the result.
     */
    private def algorithmX(results: Seq[LinkedNode] = Seq.empty[LinkedNode]): Option[Seq[LinkedNode]] =
-      if grid.forall(_.covered) then Some(results)
+      if grid.forall(_.covered) then Some(results) // if the grid is empty, we found a solution
       else
-         val chosenCol = chooseColumn()
-         chosenCol.cover()
-
+         val chosenCol = chooseColumn() // chose the most suitable column
+         chosenCol.cover() // and cover it
+         // now go though all the rows which have a one it the column
          chosenCol.getColumn.foreach { node =>
+            // and cover all columns which intersect with them.
             node.seqHorizontal().foreach(_.asInstanceOf[LinkedNode].constraint.cover())
-            val res = algorithmX(results :+ node)
-            if res.isDefined then return res
+            val res = algorithmX(results :+ node) // and start a new iteration
+            if res.isDefined then return res // found result? return it!
+            // otherwise uncover the covered lines and columns
             node.seqHorizontal().foreach(_.asInstanceOf[LinkedNode].constraint.uncover())
          }
          chosenCol.uncover()
-         None
+         None // and continue searching
 
    /**
-    *
-    * @return
+    * @return Returns the most suitable columns for the next iteration in algorithm X,
+    *         most suitable means the least ones in its column.
     */
    private def chooseColumn(): Constraint = grid.filter(!_.covered).minBy(_.seqVertical().size)
 
    /**
+    * Creates the cover matrix as double linked list grid, here we use the previously defined
+    * Node classes.
     *
-    * @return
+    * @return A Seq of the constraint columns.
     */
    private def linkedListGrid(): Seq[Constraint] =
       val grid = Seq.iterate((Constraint(0), 1), 324)(t => // constraints for 0 to 324
          (t._1.linkRight(Constraint(t._2)), t._2 + 1)).map(_._1) // linked to each other
       sudoku.getNumberedGrid.foreach { field =>
          val (d, (r, c, b)) = field // match the digit, row, column and box out of field
-         val calcPos = Seq((i: Int) => r * 9 + c, // at least one in every box
-            i => 81 + r * 9 + i, // exactly one of each in every row
-            i => 162 + c * 9 + i, // exactly one of each in every column
-            i => 243 + b * 9 + i) // exactly one of each in every box
+         val calcPos = Seq((i: Int) => r * 9 + c, // calculate offset for at least one in every box
+            i => 81 + r * 9 + i, // calculate offset for exactly one of each in every row
+            i => 162 + c * 9 + i, // calculate offset for exactly one of each in every column
+            i => 243 + b * 9 + i) // calculate offset for exactly one of each in every box
          (if d == 0 then 0 to 8 else Seq(d - 1)) // if theres a clue, we only create it, otherwise 0 to 8 possibilities
             .foreach(nd => calcPos.map(f => LinkedNode(grid(f(nd)), (r, c, nd + 1)))
                .reduceLeft((insTo, newNode) => insTo.linkRight(newNode))) // create them and link to each other (and up)
       }
       grid
 
+   /**
+    * Writes the resulting digits into the sudoku and returns it.
+    *
+    * @param res A Seq of Nodes, representing a row in the solution.
+    * @return The sudoku, returned just for convenience.
+    */
    private def updateSudoku(res: Seq[LinkedNode]): Sudoku =
       res.foreach(node => sudoku.update(node.field._1 * 9 + node.field._2, node.field._3))
       sudoku

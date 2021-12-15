@@ -1,0 +1,18 @@
+[0m[[0m[0minfo[0m] [0m[0mMain Scala API documentation to /Users/antonkluge/Programmieren/Scala/SudokuSolver/target/scala-3.1.0/api...[0m
+[0m[[0m[0mdebug[0m] [0m[0mReturning already retrieved and compiled bridge: /Users/antonkluge/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-sbt-bridge/3.1.0/scala3-sbt-bridge-3.1.0.jar.[0m
+[0m[[0m[0mdebug[0m] [0m[0mCalling Dottydoc with arguments  (ScaladocInterface):[0m
+[0m[[0m[0mdebug[0m] [0m[0m	-d[0m
+[0m[[0m[0mdebug[0m] [0m[0m	/Users/antonkluge/Programmieren/Scala/SudokuSolver/target/scala-3.1.0/api[0m
+[0m[[0m[0mdebug[0m] [0m[0m	-project[0m
+[0m[[0m[0mdebug[0m] [0m[0m	SudokuSolver[0m
+[0m[[0m[0mdebug[0m] [0m[0m	-bootclasspath[0m
+[0m[[0m[0mdebug[0m] [0m[0m	/Users/antonkluge/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.1.0/scala3-library_3-3.1.0.jar:/Users/antonkluge/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.6/scala-library-2.13.6.jar[0m
+[0m[[0m[0mdebug[0m] [0m[0m	-classpath[0m
+[0m[[0m[0mdebug[0m] [0m[0m	/Users/antonkluge/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/org/scalactic/scalactic_3/3.2.9/scalactic_3-3.2.9.jar[0m
+[0m[[0m[0mdebug[0m] [0m[0m	/Users/antonkluge/Programmieren/Scala/SudokuSolver/target/scala-3.1.0/classes/Main.tasty[0m
+[0m[[0m[0mdebug[0m] [0m[0m	/Users/antonkluge/Programmieren/Scala/SudokuSolver/target/scala-3.1.0/classes/solver/Backtracking.tasty[0m
+[0m[[0m[0mdebug[0m] [0m[0m	/Users/antonkluge/Programmieren/Scala/SudokuSolver/target/scala-3.1.0/classes/solver/DancingLinks.tasty[0m
+[0m[[0m[0mdebug[0m] [0m[0m	/Users/antonkluge/Programmieren/Scala/SudokuSolver/target/scala-3.1.0/classes/solver/ExactCover.tasty[0m
+[0m[[0m[0mdebug[0m] [0m[0m	/Users/antonkluge/Programmieren/Scala/SudokuSolver/target/scala-3.1.0/classes/solver/Solver.tasty[0m
+[0m[[0m[0mdebug[0m] [0m[0m	/Users/antonkluge/Programmieren/Scala/SudokuSolver/target/scala-3.1.0/classes/sudoku/Sudoku.tasty[0m
+[0m[[0m[0minfo[0m] [0m[0mMain Scala API documentation successful.[0m

@@ -2,53 +2,143 @@ package solver
 
 import sudoku.Sudoku
 
-class DancingLinks(sudoku: Sudoku) extends Solver(sudoku):
+/**
+ *
+ * @param sudoku : The sudoku to solve
+ */
+class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
 
-  trait Node(var left: Node, var right: Node, var upper: Node, var lower: Node):
-    left = this; right = this; upper = this; lower = this
+   /**
+    *
+    */
+   lazy val grid: Seq[Constraint] = linkedListGrid()
 
-    def linkRight(insertNode: Node): Node =
-      insertNode.right = right
-      insertNode.right.left = insertNode
-      insertNode.left = this
-      right = insertNode
-      insertNode
+   /**
+    *
+    */
+   trait Node():
 
-    def linkLower(insertNode: Node): Node =
-      insertNode.lower = lower
-      insertNode.lower.upper = insertNode
-      insertNode.upper = this
-      lower = insertNode
-      insertNode
+      var left, right, upper, lower = this
 
-  case class Constraint(constraint: Int) extends Node(null, null, null, null):
+      /**
+       *
+       * @param insertNode links the insertNode to the right of this (and adjusts the connected).
+       * @tparam N a node, either Constraint or LinkedNode.
+       * @return
+       */
+      def linkRight[N <: Node](insertNode: N): N =
+         insertNode.right = right
+         insertNode.right.left = insertNode
+         insertNode.left = this
+         right = insertNode
+         insertNode
 
-    def linkLowest(insertNode: Node): Node = upper.linkLower(insertNode)
+      /**
+       *
+       * @param insertNode links the insertNode to the lower of this (and adjusts the connected).
+       * @tparam N a node, either Constraint or LinkedNode.
+       * @return
+       */
+      def linkLower[N <: Node](insertNode: N): N =
+         insertNode.lower = lower
+         insertNode.lower.upper = insertNode
+         insertNode.upper = this
+         lower = insertNode
+         insertNode
 
-  case class Possibility(possibility: Int) extends Node(null, null, null, null):
+      def removeHorizontal(): Unit =
+         left.right = right
+         right.left = left
 
-    def linkRightest(insertNode: Node): Node = left.linkRight(insertNode)
+      def removeVertical(): Unit =
+         upper.lower = lower
+         lower.upper = upper
 
-  case class LinkedNode() extends Node(null, null, null, null)
+      def reinsertVertical(): Unit =
+         upper.lower = this
+         lower.upper = this
 
-  override def solve: Sudoku =
-    val grid = linkedListGrid()
+      def reinsertHorizontal(): Unit =
+         left.right = this
+         right.left = this
 
+      def seqSideways(): Seq[Node] = Iterator.iterate(right)(_.right).takeWhile(_ != this).toSeq
 
-    null
+      def seqVertical(): Seq[Node] = Iterator.iterate(lower)(_.lower).takeWhile(_ != this).toSeq
 
+   /**
+    *
+    * @param constraint which constraint it is.
+    * @param covered    if the column is covered.
+    */
+   case class Constraint(constraint: Int, var covered: Boolean = false) extends Node() :
 
-  private def linkedListGrid(): (Seq[Possibility], Seq[Constraint]) =
-    val grid = (Seq.range(0, 729).map(Possibility.apply), Seq.range(0, 324).map(Constraint.apply))
-    sudoku.getGrid.zip((0 to 8).flatMap(r => (0 to 8).map(c => (r, c)))).foreach { field =>
-      val (d, (r, c)) = field
-      val b = Sudoku.whichBox(r * 9 + c)
-      // colum row existing constraint
-      if d != 0 then grid._2(r * 9 + c).linkLowest(grid._1(d - 1).linkRightest(LinkedNode()))
-      else (0 to 8).foreach(nd => grid._2(r * 9 + c).linkLowest(grid._1(nd).linkRightest(LinkedNode())))
-      Seq((81, r), (162, c), (243, b)).foreach { t => 
-        if d != 0 then grid._2(t._1 + t._2 * 9 + (d - 1)).linkLowest(grid._1(d - 1).linkRightest(LinkedNode()))
-        else (0 to 8).foreach(nd => grid._2(t._1 + t._2 * 9 + nd).linkLowest(grid._1(nd).linkRightest(LinkedNode())))
+      def linkLowest[N <: Node](insertNode: N): N = upper.linkLower(insertNode)
+
+      def getColumn: Seq[LinkedNode] = this.seqVertical().map(_.asInstanceOf[LinkedNode])
+
+      def cover(): Unit =
+         covered = true
+         removeHorizontal()
+         getColumn.foreach(cn => cn.seqVertical().drop(1).foreach(_.removeVertical()))
+
+      def uncover(): Unit =
+         covered = false
+         this.getColumn.reverse.foreach(cn => cn.seqVertical().drop(1).foreach(_.reinsertVertical()))
+         reinsertHorizontal();
+
+   case class LinkedNode(constraint: Constraint, field: (Int, Int, Int)) extends Node() :
+      constraint.linkLowest(this)
+
+   /**
+    *
+    * @return
+    */
+   override def solve: Sudoku = null //TODO
+
+   /**
+    *
+    * @param results the accumulated results, in the beginning start with a empty Seq.
+    * @return
+    */
+   private def algorithmX(results: Seq[Constraint] = Seq.empty[Constraint]): Option[Seq[Constraint]] = //TODO
+      if grid.forall(_.covered) then Some(results)
+      else
+         val chosenCol = chooseColumn()
+         chosenCol.cover()
+         chosenCol.getColumn.foreach(node => null)
+         null
+
+   /**
+    *
+    * @return
+    */
+   private def chooseColumn(): Constraint = grid.filter(!_.covered).minBy(_.seqVertical().size)
+
+   /**
+    *
+    * @return
+    */
+   private def linkedListGrid(): Seq[Constraint] =
+      val grid = Seq.iterate((Constraint(0), 1), 324)(t => // constraints for 0 to 324
+         (t._1.linkRight(Constraint(t._2)), t._2 + 1)).map(_._1) // linked to each other
+      sudoku.getNumberedGrid.foreach { field =>
+         val (d, (r, c, b)) = field // match the digit, row, column and box out of field
+         val calcPos = Seq((i: Int) => r * 9 + c, // at least one in every box
+            i => 81 + r * 9 + i, // exactly one of each in every row
+            i => 162 + c * 9 + i, // exactly one of each in every column
+            i => 243 + b * 9 + i) // exactly one of each in every box
+         (if d == 0 then 0 to 8 else Seq(d - 1)) // if theres a clue, we only create it, otherwise 0 to 8 possibilities
+            .foreach(nd => calcPos.map(f => LinkedNode(grid(f(nd)), (81 * r + 9 * c + nd, f(nd), nd + 1)))
+               .reduceLeft((insTo, newNode) => insTo.linkRight(newNode))) // create them and link to each other (and up)
       }
-    }
-    grid
+      grid
+
+   /**
+    *
+    * @return
+    */
+   def linkedGridString: String =
+      val arr = Array.ofDim[Int](729, 324)
+      grid.foreach(con => con.getColumn.foreach(n => arr(n.field._1)(n.field._2) = 1))
+      arr.map(_.map(i => if i == 0 then " " else "X").mkString).mkString("\n")

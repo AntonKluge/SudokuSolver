@@ -2,9 +2,12 @@ package solver
 
 import sudoku.Sudoku
 
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
+
 /**
  * A algorithm to solve sudokus by converting them into exact cover problems and then
- * using algorithm Xto solve them. The basics are a 729 x 324 grid of one and zeros
+ * using algorithm X to solve them. The basics are a 729 x 324 grid of ones and zeros
  * containing all the constraints and possibilities.
  * The rows represent thereby the existence of a number N in row
  * 81 * rowSudoku + 9 * columnSudoku + (N - 1).
@@ -22,7 +25,8 @@ import sudoku.Sudoku
  */
 class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
 
-   lazy val grid: Seq[Constraint] = linkedListGrid()
+   lazy val gridPub: Seq[Constraint] = linkedListGrid()
+   lazy val results: ListBuffer[Sudoku] = ListBuffer.empty[Sudoku]
 
    /**
     *
@@ -77,7 +81,6 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
 
       def seqVertical(): Seq[Node] = Iterator.iterate(lower)(_.lower).takeWhile(_ != this).toSeq
 
-
    /**
     *
     * @param constraint which constraint it is.
@@ -89,10 +92,11 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
 
       def getColumn: Seq[LinkedNode] = this.seqVertical().map(_.asInstanceOf[LinkedNode])
 
-      def cover(): Unit =
+      def cover(): Constraint =
          covered = true
          removeHorizontal()
          getColumn.foreach(cn => cn.seqHorizontal().foreach(_.removeVertical()))
+         this
 
       def uncover(): Unit =
          covered = false
@@ -102,37 +106,89 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
    case class LinkedNode(constraint: Constraint, field: (Int, Int, Int)) extends Node() :
       constraint.linkLowest(this)
 
-
-   override def solve: Sudoku = updateSudoku(algorithmX().getOrElse(Seq.empty))
+   override def solve: Sudoku =
+      algorithmX()
+      results.head
 
    /**
     * Performs the algorithm X on a exact cover matrix.
     *
-    * @param results the accumulated results, in the beginning start with a empty Seq.
+    * @param accumulating the accumulated results, in the beginning start with a empty Seq.
     * @return if found a Seq of Linked nodes for every row in the result.
     */
-   private def algorithmX(results: Seq[LinkedNode] = Seq.empty[LinkedNode]): Option[Seq[LinkedNode]] =
-      if grid.forall(_.covered) then Some(results) // if the grid is empty, we found a solution
+   private def algorithmX(accumulating: Seq[LinkedNode] = Seq.empty[LinkedNode]): Boolean =
+      if gridPub.forall(_.covered) then
+         results += updatedSudoku(accumulating) // if the grid is empty, we found a solution
+         true
       else
-         val chosenCol = chooseColumn() // chose the most suitable column
-         chosenCol.cover() // and cover it
+         val chosenCol = chooseColumn().cover() // chose the most suitable column
          // now go though all the rows which have a one it the column
          chosenCol.getColumn.foreach { node =>
             // and cover all columns which intersect with them.
             node.seqHorizontal().foreach(_.asInstanceOf[LinkedNode].constraint.cover())
-            val res = algorithmX(results :+ node) // and start a new iteration
-            if res.isDefined then return res // found result? return it!
+            val res = algorithmX(accumulating :+ node) // and start a new iteration
+            if res then return res // found result? return it!
             // otherwise uncover the covered lines and columns
             node.seqHorizontal().foreach(_.asInstanceOf[LinkedNode].constraint.uncover())
          }
          chosenCol.uncover()
-         None // and continue searching
+         false // and continue searching
+
+
+   def iterSolutions: Iterator[Sudoku] =
+      def iterIntern(acc: Seq[LinkedNode]): Iterator[Sudoku] =
+         new Iterator[Sudoku] {
+            val isSolution: Boolean = gridPub.forall(_.covered)
+            var valLeft: Boolean = true
+
+            lazy val chosenColumn: Constraint = chooseColumn().cover()
+            lazy val children: Iterator[LinkedNode] = Iterator.from(chosenColumn.getColumn)
+
+            var currentChildIter: Iterator[Sudoku] = null
+            var currentChild: LinkedNode = null
+
+            def proceed(): Boolean = {
+               while children.hasNext do
+                  currentChild = children.next()
+                  currentChild.seqHorizontal().foreach(_.asInstanceOf[LinkedNode].constraint.cover())
+                  currentChildIter = iterIntern(acc :+ currentChild)
+                  if currentChildIter.hasNext then return true
+                  else currentChild.seqHorizontal().foreach(_.asInstanceOf[LinkedNode].constraint.uncover())
+               chosenColumn.uncover()
+               false
+            }
+
+            override def hasNext: Boolean =
+               if isSolution then
+                  valLeft
+               else {
+                  if currentChildIter == null || currentChild == null then
+                     proceed()
+                  else if !currentChildIter.hasNext then
+                     currentChild.seqHorizontal().foreach(_.asInstanceOf[LinkedNode].constraint.uncover())
+                     if !children.hasNext then
+                        chosenColumn.uncover()
+                        false
+                     else
+                        proceed()
+                  else
+                     true
+            }
+
+            override def next(): Sudoku =
+               if isSolution then
+                  valLeft = false
+                  updatedSudoku(acc)
+               else
+                  currentChildIter.next()
+         }
+      iterIntern(Seq.empty)
 
    /**
     * @return Returns the most suitable columns for the next iteration in algorithm X,
     *         most suitable means the least ones in its column.
     */
-   private def chooseColumn(): Constraint = grid.filter(!_.covered).minBy(_.seqVertical().size)
+   private def chooseColumn(): Constraint = gridPub.filter(!_.covered).minBy(_.seqVertical().size)
 
    /**
     * Creates the cover matrix as double linked list grid, here we use the previously defined
@@ -156,11 +212,12 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
       grid
 
    /**
-    * Writes the resulting digits into the sudoku and returns it.
+    * Writes the resulting digits into a new sudoku and returns it.
     *
     * @param res A Seq of Nodes, representing a row in the solution.
-    * @return The sudoku, returned just for convenience.
+    * @return The new sudoku, which is not linked to the classes sudoku.
     */
-   private def updateSudoku(res: Seq[LinkedNode]): Sudoku =
-      res.foreach(node => sudoku.update(node.field._1 * 9 + node.field._2, node.field._3))
-      sudoku
+   private def updatedSudoku(res: Seq[LinkedNode]): Sudoku =
+      val newSudoku = sudoku.clone()
+      res.foreach(node => newSudoku.update(node.field._1 * 9 + node.field._2, node.field._3))
+      newSudoku

@@ -70,6 +70,8 @@ case class Sudoku(sudoku: Array[Int]):
 
    override def toString: String = sudoku.sliding(9, 9).map(_.mkString(" | ")).mkString("\n")
 
+   override def clone(): Sudoku = Sudoku(sudoku.clone())
+
 
 object Sudoku:
 

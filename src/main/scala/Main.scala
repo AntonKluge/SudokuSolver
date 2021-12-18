@@ -11,7 +11,14 @@ object Main extends App :
    val sudokuHell = new Sudoku("000040000\n100000060\n090807300\n006204030\n000090400\n020050000\n080302700\n000500000\n009000008")
    val sudokuAntiBruteForce = new Sudoku("000000000\n000003085\n001020000\n000507000\n004000100\n090000000\n500000073\n002010000\n000040009")
 
-   Seq(sudokuEasy, sudokuMedium, sudokuHard, sudokuHell).foreach { sudoku =>
+
+   var t1 = System.nanoTime
+   val i = DancingLinks(sudokuEasy).iterSolutions.take(1000).map(_.toString).distinct.size
+   println(i)
+   var duration = (System.nanoTime - t1) / 1e9d
+   println("Took: " + duration + "s")
+
+   /*Seq(sudokuEasy, sudokuMedium, sudokuHard, sudokuHell).foreach { sudoku =>
 
       var t1 = System.nanoTime
       val solved = Backtracking(sudoku).solve
@@ -29,10 +36,17 @@ object Main extends App :
 
       if solved.toString != solved2.toString then throw IllegalArgumentException()
    }
-   
+
    var t1 = System.nanoTime
    val solved = DancingLinks(sudokuAntiBruteForce).solve
    var duration = (System.nanoTime - t1) / 1e9d
 
    println("Took Dancing Links: " + duration + "s")
    println(solved)
+
+   val sudokus = Seq(sudokuEasy, sudokuMedium, sudokuHard, sudokuHell, sudokuAntiBruteForce)
+   t1 = System.nanoTime
+   Seq.range(0, 1000).map(i => sudokus(i % 5)).foreach(DancingLinks(_).solve)
+   duration = (System.nanoTime - t1) / 1e9d
+   println("Took Dancing Links: " + duration + "s")
+   println(DancingLinks(sudokuZeros).solve) */

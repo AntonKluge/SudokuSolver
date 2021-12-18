@@ -9,15 +9,17 @@ import sudoku.Sudoku
 class Backtracking(sudoku: Sudoku) extends Solver(sudoku) :
 
    override def solve: Option[Sudoku] =
-      val sudokuWorkOn = sudoku.clone() // So we dont change the original sudoku
-      def nextField(field: Int): Boolean =
+      def nextField(field: Int, sudokuInner: Sudoku): Option[Sudoku] =
          if field == 81 then
-            true // if the field was called with 81 then we successfully finished
-         else if sudokuWorkOn.getField(field) != 0 then
-            nextField(field + 1) // if on the field is already a number: skip
-         else if (1 to 9).exists(n => sudokuWorkOn.update(field, n).isValid && nextField(field + 1)) then 
-            true // if one possibility is valid, we call the next field with it, if it returns true, so do we
+            Some(sudokuInner)
+         else if sudokuInner.getField(field) != 0 then
+            nextField(field + 1, sudokuInner)
          else
-            sudokuWorkOn.update(field, 0) // if it was not successful, reset the field
-            false // and return false
-      if nextField(0) then Some(sudokuWorkOn) else None
+            (1 to 9).foreach { n =>
+               val newSudoku = sudokuInner.updated(field, n)
+               if newSudoku.isValid then
+                  val ret = nextField(field + 1, newSudoku)
+                  if ret.isDefined then return ret
+            }
+            None
+      nextField(0, sudoku)

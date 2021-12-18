@@ -1,8 +1,7 @@
 package sudoku
 
-class SudokuGenerator
-   
-object SudokuGenerator:
-   
-   def fullValid: Sudoku = ???
-      
+import scala.util.Random
+
+class SudokuGenerator:
+
+   val random: Random = Random()

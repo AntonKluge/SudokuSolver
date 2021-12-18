@@ -13,8 +13,10 @@ object Main extends App :
 
 
    var t1 = System.nanoTime
-   val i = DancingLinks(sudokuEasy).iterSolutions.take(1000).map(_.toString).distinct.size
+   val i = DancingLinks(sudokuEasy).solveIterator.take(1000).map(_.toString).distinct.size
+   val i1 = DancingLinks(sudokuZeros).solveIterator.take(1000).map(_.toString).distinct.size
    println(i)
+   println(i1)
    var duration = (System.nanoTime - t1) / 1e9d
    println("Took: " + duration + "s")
 

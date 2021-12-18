@@ -8,7 +8,7 @@ import sudoku.Sudoku
  */
 class Backtracking(sudoku: Sudoku) extends Solver(sudoku) :
 
-   override def solve: Sudoku =
+   override def solve: Option[Sudoku] =
       val sudokuWorkOn = sudoku.clone() // So we dont change the original sudoku
       def nextField(field: Int): Boolean =
          if field == 81 then
@@ -20,4 +20,4 @@ class Backtracking(sudoku: Sudoku) extends Solver(sudoku) :
          else
             sudokuWorkOn.update(field, 0) // if it was not successful, reset the field
             false // and return false
-      if nextField(0) then sudokuWorkOn else null
+      if nextField(0) then Some(sudokuWorkOn) else None

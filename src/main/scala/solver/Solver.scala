@@ -11,4 +11,4 @@ trait Solver(sudoku: Sudoku):
     *
     * @return
     */
-   def solve: Sudoku
+   def solve: Option[Sudoku]

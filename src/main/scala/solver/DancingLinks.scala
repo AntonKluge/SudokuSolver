@@ -26,8 +26,7 @@ import scala.collection.mutable.ListBuffer
 class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
 
    lazy val gridPub: Seq[Constraint] = linkedListGrid()
-   lazy val results: ListBuffer[Sudoku] = ListBuffer.empty[Sudoku]
-
+   
    /**
     *
     */
@@ -106,9 +105,13 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
    case class LinkedNode(constraint: Constraint, field: (Int, Int, Int)) extends Node() :
       constraint.linkLowest(this)
 
-   override def solve: Sudoku =
-      algorithmX()
-      results.head
+   override def solve: Option[Sudoku] = algorithmX()
+
+   def solveN(n: Int): Seq[Sudoku] = iterSolutions.take(n).toSeq
+   
+   def solveIterator: Iterator[Sudoku] = iterSolutions
+   
+   def isValid: Boolean = algorithmX().isEmpty
 
    /**
     * Performs the algorithm X on a exact cover matrix.
@@ -116,10 +119,9 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
     * @param accumulating the accumulated results, in the beginning start with a empty Seq.
     * @return if found a Seq of Linked nodes for every row in the result.
     */
-   private def algorithmX(accumulating: Seq[LinkedNode] = Seq.empty[LinkedNode]): Boolean =
+   private def algorithmX(accumulating: Seq[LinkedNode] = Seq.empty[LinkedNode]): Option[Sudoku] =
       if gridPub.forall(_.covered) then
-         results += updatedSudoku(accumulating) // if the grid is empty, we found a solution
-         true
+         Some(updatedSudoku(accumulating)) // if the grid is empty, we found a solution
       else
          val chosenCol = chooseColumn().cover() // chose the most suitable column
          // now go though all the rows which have a one it the column
@@ -127,15 +129,15 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
             // and cover all columns which intersect with them.
             node.seqHorizontal().foreach(_.asInstanceOf[LinkedNode].constraint.cover())
             val res = algorithmX(accumulating :+ node) // and start a new iteration
-            if res then return res // found result? return it!
+            if res.isDefined then return res // found result? return it!
             // otherwise uncover the covered lines and columns
             node.seqHorizontal().foreach(_.asInstanceOf[LinkedNode].constraint.uncover())
          }
          chosenCol.uncover()
-         false // and continue searching
+         None // and continue searching
 
 
-   def iterSolutions: Iterator[Sudoku] =
+   private def iterSolutions: Iterator[Sudoku] =
       def iterIntern(acc: Seq[LinkedNode]): Iterator[Sudoku] =
          new Iterator[Sudoku] {
             val isSolution: Boolean = gridPub.forall(_.covered)
@@ -144,28 +146,30 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
             lazy val chosenColumn: Constraint = chooseColumn().cover()
             lazy val children: Iterator[LinkedNode] = Iterator.from(chosenColumn.getColumn)
 
-            var currentChildIter: Iterator[Sudoku] = null
-            var currentChild: LinkedNode = null
+            var currentChildIter: Option[Iterator[Sudoku]] = None
+            var currentChild: Option[LinkedNode] = None
 
-            def proceed(): Boolean = {
+            private def proceed(): Boolean = {
                while children.hasNext do
-                  currentChild = children.next()
-                  currentChild.seqHorizontal().foreach(_.asInstanceOf[LinkedNode].constraint.cover())
-                  currentChildIter = iterIntern(acc :+ currentChild)
-                  if currentChildIter.hasNext then return true
-                  else currentChild.seqHorizontal().foreach(_.asInstanceOf[LinkedNode].constraint.uncover())
+                  currentChild = Some(children.next())
+                  currentChild.get.seqHorizontal().foreach(_.asInstanceOf[LinkedNode].constraint.cover())
+                  currentChildIter = Some(iterIntern(acc :+ currentChild.get))
+                  if currentChildIter.get.hasNext then 
+                     return true
+                  else 
+                     currentChild.get.seqHorizontal().foreach(_.asInstanceOf[LinkedNode].constraint.uncover())
                chosenColumn.uncover()
                false
             }
 
             override def hasNext: Boolean =
-               if isSolution then
+               if isSolution then 
                   valLeft
-               else {
-                  if currentChildIter == null || currentChild == null then
+               else 
+                  if currentChildIter.isEmpty || currentChild.isEmpty then
                      proceed()
-                  else if !currentChildIter.hasNext then
-                     currentChild.seqHorizontal().foreach(_.asInstanceOf[LinkedNode].constraint.uncover())
+                  else if !currentChildIter.get.hasNext then
+                     currentChild.get.seqHorizontal().foreach(_.asInstanceOf[LinkedNode].constraint.uncover())
                      if !children.hasNext then
                         chosenColumn.uncover()
                         false
@@ -173,14 +177,14 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
                         proceed()
                   else
                      true
-            }
+            
 
             override def next(): Sudoku =
                if isSolution then
                   valLeft = false
                   updatedSudoku(acc)
                else
-                  currentChildIter.next()
+                  currentChildIter.get.next()
          }
       iterIntern(Seq.empty)
 

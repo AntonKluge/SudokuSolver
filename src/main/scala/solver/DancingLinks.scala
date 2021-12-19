@@ -25,28 +25,35 @@ import scala.collection.mutable.ListBuffer
  */
 class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
 
-   lazy val gridPub: Seq[Constraint] = linkedListGrid()
+   private lazy val gridPub: Seq[Constraint] = linkedListGrid()
 
    override def solve: Option[Sudoku] = algorithmX()
 
    def solveN(n: Int): Seq[Sudoku] = iterSolutions.take(n).toSeq
 
+   /** Implements a iterator over every solution @sudoku has. Here are multiple inner
+    * iterators at play.
+    * @return said iterator.
+    */
    private def iterSolutions: Iterator[Sudoku] =
       def iterIntern(acc: Seq[LinkedNode]): Iterator[Sudoku] =
          new Iterator[Sudoku] {
+            // if this is a solution we see it as a leaf.
             private val isSolution: Boolean = gridPub.forall(_.covered)
             private var valLeft: Boolean = true
-
+            // the best column to cover, is only saved to uncover it in the end.
             private lazy val chosenColumn: Constraint = {
                val chosen = chooseColumn()
                chosen.cover()
                chosen
             }
+            // all intersections of the chosenColumn with other rows.
             private lazy val children: Iterator[LinkedNode] = Iterator.from(chosenColumn.getColumn)
-
-            private var currentChildIter: Option[Iterator[Sudoku]] = None
+            // the current row which intersects with the chosenColumn.
             private var currentChild: Option[LinkedNode] = None
-
+            // the iterator we get if we select a row from children, cover it and start a new recursive layer.
+            private var currentChildIter: Option[Iterator[Sudoku]] = None
+            // implements the selection of the new currentChild and the creation of the new currentChildIter
             private def proceed(): Boolean = {
                while children.hasNext do
                   currentChild = Some(children.next())
@@ -60,19 +67,18 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
 
             override def hasNext: Boolean =
                if isSolution then
-                  valLeft
+                  valLeft // if this is a leaf, just return if it has been iterated.
                else if currentChildIter.isEmpty || currentChild.isEmpty then
-                  proceed()
+                  proceed() // if this node has never been called, proceed to the first element of its children.
                else if !currentChildIter.get.hasNext then
-                  currentChild.get.uncover()
-                  if !children.hasNext then
+                  currentChild.get.uncover() // if currentChild is exhausted ..
+                  if !children.hasNext then // .. and children is too then there is no more.
                      chosenColumn.uncover()
                      false
                   else
-                     proceed()
+                     proceed() // .. and children is not just take the next child
                else
                   true
-
 
             override def next(): Sudoku =
                if isSolution then
@@ -92,7 +98,6 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
 
    /**
     * Writes the resulting digits into a new sudoku and returns it.
-    *
     * @param res A Seq of Nodes, representing a row in the solution.
     * @return The new sudoku, which is not linked to the classes sudoku.
     */
@@ -101,11 +106,10 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
 
    def solveIterator: Iterator[Sudoku] = iterSolutions
 
-   def isValid: Boolean = iterSolutions.size == 1
+   def isDistinct: Boolean = iterSolutions.size == 1
 
    /**
     * Performs the algorithm X on a exact cover matrix.
-    *
     * @param accumulating the accumulated results, in the beginning start with a empty Seq.
     * @return if found a Seq of Linked nodes for every row in the result.
     */
@@ -130,7 +134,6 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
    /**
     * Creates the cover matrix as double linked list grid, here we use the previously defined
     * Node classes.
-    *
     * @return A Seq of the constraint columns.
     */
    private def linkedListGrid(): Seq[Constraint] =
@@ -148,15 +151,11 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
       }
       grid
 
-   /**
-    *
-    */
    trait Node():
 
       var left, right, upper, lower = this
 
       /**
-       *
        * @param insertNode links the insertNode to the right of this (and adjusts the connected).
        * @tparam N a node, either Constraint or LinkedNode.
        * @return
@@ -169,7 +168,6 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
          insertNode
 
       /**
-       *
        * @param insertNode links the insertNode to the lower of this (and adjusts the connected).
        * @tparam N a node, either Constraint or LinkedNode.
        * @return
@@ -182,27 +180,19 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
          insertNode
 
       def removeHorizontal(): Unit = left.right = right; right.left = left
-
       def removeVertical(): Unit = upper.lower = lower; lower.upper = upper
-
       def reinsertHorizontal(): Unit = left.right = this; right.left = this
-
       def reinsertVertical(): Unit = upper.lower = this; lower.upper = this
-
       def seqHorizontal(): Seq[Node] = Iterator.iterate(right)(_.right).takeWhile(_ != this).toSeq
-
       def seqVertical(): Seq[Node] = Iterator.iterate(lower)(_.lower).takeWhile(_ != this).toSeq
-
       def cover(): Unit
-
       def uncover(): Unit
 
    /**
-    *
     * @param constraint which constraint it is.
     * @param covered    if the column is covered.
     */
-   case class Constraint(constraint: Int, var covered: Boolean = false) extends Node() :
+   case class Constraint(constraint: Int, var covered: Boolean = false) extends Node():
 
       def linkLowest[N <: Node](insertNode: N): N = upper.linkLower(insertNode)
 
@@ -218,8 +208,7 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
 
       def getColumn: Seq[LinkedNode] = this.seqVertical().map(_.asInstanceOf[LinkedNode])
 
-   case class LinkedNode(constraint: Constraint, field: (Int, Int, Int)) extends Node() :
-
+   case class LinkedNode(constraint: Constraint, field: (Int, Int, Int)) extends Node():
       constraint.linkLowest(this)
 
       override def cover(): Unit = this.seqHorizontal().foreach(_.asInstanceOf[LinkedNode].constraint.cover())

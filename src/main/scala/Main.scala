@@ -10,14 +10,14 @@ object Main extends App :
    val sudokuHard = new Sudoku("000000070\n060300105\n304000200\n050096020\n008005000\n400800007\n531900000\n009000080\n020600450")
    val sudokuHell = new Sudoku("000040000\n100000060\n090807300\n006204030\n000090400\n020050000\n080302700\n000500000\n009000008")
    val sudokuAntiBruteForce = new Sudoku("000000000\n000003085\n001020000\n000507000\n004000100\n090000000\n500000073\n002010000\n000040009")
-   
-   val t2 = System.nanoTime
-   Backtracking(sudokuEasy).solve.get
-   Backtracking(sudokuMedium).solve.get
-   Backtracking(sudokuHard).solve.get
-   Backtracking(sudokuHell).solve.get
-   val duration2 = (System.nanoTime - t2) / 1e9d
-   println("Took: " + duration2 + "s")
+
+   Seq(sudokuEasy, sudokuMedium, sudokuHard, sudokuHell, sudokuAntiBruteForce).foreach(sudoku => {
+      val t2 = System.nanoTime
+      DancingLinks(sudokuEasy).solve.get
+      val duration2 = (System.nanoTime - t2) / 1e9d
+      println("Took: " + duration2 + "s")
+   })
+
 
 
 

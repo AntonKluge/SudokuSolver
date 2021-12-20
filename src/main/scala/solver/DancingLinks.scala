@@ -179,13 +179,28 @@ class DancingLinks(sudoku: Sudoku) extends Solver(sudoku) :
          lower = insertNode
          insertNode
 
-      def removeHorizontal(): Unit = left.right = right; right.left = left
-      def removeVertical(): Unit = upper.lower = lower; lower.upper = upper
-      def reinsertHorizontal(): Unit = left.right = this; right.left = this
-      def reinsertVertical(): Unit = upper.lower = this; lower.upper = this
+      def removeHorizontal(): Unit =
+         left.right = right
+         right.left = left
+
+      def removeVertical(): Unit =
+         upper.lower = lower
+         lower.upper = upper
+
+      def reinsertHorizontal(): Unit =
+         left.right = this
+         right.left = this
+
+      def reinsertVertical(): Unit =
+         upper.lower = this
+         lower.upper = this
+
       def seqHorizontal(): Seq[Node] = Iterator.iterate(right)(_.right).takeWhile(_ != this).toSeq
+
       def seqVertical(): Seq[Node] = Iterator.iterate(lower)(_.lower).takeWhile(_ != this).toSeq
+
       def cover(): Unit
+
       def uncover(): Unit
 
    /**

@@ -56,7 +56,12 @@ case class Sudoku(sudoku: Array[Int]):
 
    override def toString: String = sudoku.grouped(27).map(_.grouped(9).map(_.grouped(3).map(_.mkString(" "))
       .mkString(" | ")).map(_ + "\n").mkString).mkString("——————+———————+——————\n")
-
+   
+   override def equals(obj: Any): Boolean = obj match
+      case Sudoku(arr) => arr.sameElements(sudoku)
+      case _ => false
+      
+   
 object Sudoku:
 
    /**

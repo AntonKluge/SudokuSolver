@@ -1,6 +1,6 @@
 
 import solver.{Backtracking, DancingLinks}
-import sudoku.{Sudoku, SudokuGenerator}
+import sudoku.Sudoku
 
 object Main extends App :
 
@@ -13,7 +13,7 @@ object Main extends App :
 
    Seq(sudokuEasy, sudokuMedium, sudokuHard, sudokuHell, sudokuAntiBruteForce).foreach(sudoku => {
       val t2 = System.nanoTime
-      DancingLinks(sudokuEasy).solve.get
+      println(Backtracking(sudoku).solve.get)
       val duration2 = (System.nanoTime - t2) / 1e9d
       println("Took: " + duration2 + "s")
    })

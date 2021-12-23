@@ -31,3 +31,22 @@ class DancingLinksTest extends AnyWordSpec:
          assert(DancingLinks(sudokuHell).solve.get.equals(sudokuHellSolution))
       }
    }
+
+   "there must be one solution" must {
+      "for the easy sudoku" in {
+         assert(DancingLinks(sudokuEasy).isDistinct)
+         assert(DancingLinks(sudokuEasy).solveIterator.size == 1)
+      }
+      "for the medium sudoku" in {
+         assert(DancingLinks(sudokuMedium).isDistinct)
+         assert(DancingLinks(sudokuMedium).solveIterator.size == 1)
+      }
+      "for the hard sudoku" in {
+         assert(DancingLinks(sudokuHard).isDistinct)
+         assert(DancingLinks(sudokuHard).solveIterator.size == 1)
+      }
+      "for the hell sudoku" in {
+         assert(DancingLinks(sudokuHell).isDistinct)
+         assert(DancingLinks(sudokuHell).solveIterator.size == 1)
+      }
+   }

@@ -70,7 +70,7 @@ object SudokuGenerator:
                while childIterator.hasNext do
                   val (i, _) = childIterator.next()
                   val newSudoku = sudoku.updated(i, 0)
-                  if newSudoku.isValid && DancingLinks(newSudoku).isDistinct then
+                  if DancingLinks(newSudoku).isDistinct then
                      current = Some(iterateIntern(fields.updated(i, (i, false)), depth + 1, newSudoku))
                      if current.get.hasNext then return true
                false

@@ -1,6 +1,7 @@
 package sudoku
 
 import scala.util.Random
+import solver.DancingLinks
 
 /**
  * A utility class for sudokus which saves and manipulates a given sudoku in array form
@@ -53,6 +54,8 @@ case class Sudoku(sudoku: Array[Int]):
     */
    def getNumberedGrid: Array[(Int, (Int, Int, Int))] =
       sudoku.zip((0 to 8).flatMap(r => (0 to 8).map(c => (r, c, Sudoku.whichBox(r * 9 + c)))))
+
+   def solve: Option[Sudoku] = DancingLinks(this).solve
 
    override def toString: String = sudoku.grouped(27).map(_.grouped(9).map(_.grouped(3).map(_.mkString(" "))
       .mkString(" | ")).map(_ + "\n").mkString).mkString("——————+———————+——————\n")

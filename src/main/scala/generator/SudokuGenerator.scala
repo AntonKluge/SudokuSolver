@@ -1,20 +1,19 @@
-package sudoku
+package generator
 
-import scala.util.Random
+import sudoku.Sudoku
 import solver.DancingLinks
 
-import scala.collection.immutable.Range.Inclusive
+import scala.util.Random
 
 /**
  * Generates random sudokus with the help of sudoku solvers.
  */
 object SudokuGenerator:
 
-   private lazy val random: Random = Random()
-
    /**
     * Generates a randomly generated sudoku with all fields filled out, using something
     * very similar to the backtracking algorithm.
+    *
     * @return the sudoku.
     */
    def getValidSudoku: Sudoku =
@@ -27,12 +26,14 @@ object SudokuGenerator:
                if ret.isDefined then return ret
          }
          None
+
       innerBacktrack(0, Sudoku(Array.ofDim(81))).orNull
 
    /**
     * Generates a random sudoku with a certain amount of clues. Therefore it keeps track of all
     * fields where are still clues left and removes them one by one randomly.
     * The resulting sudoku is valid and has only one distinct solution.
+    *
     * @param clues indicates how many clues the resulting sudoku has, in other words it has
     *              81 - clues zeros.
     * @return The resulting sudoku.
@@ -48,11 +49,13 @@ object SudokuGenerator:
                if ret.isDefined then return ret
          }
          None
+
       backtrackSudoku(Seq.iterate((0, true), 81)((i, _) => (i + 1, true)), 0, getValidSudoku).get
 
    /**
     * Iterator over all solutions with a certain amount of clues based on random starting sudoku,
     * therefore the sudokus are sometimes not distinct and do not differ very much.
+    *
     * @param clues indicates how many clues the resulting sudoku should have.
     * @return a Iterator over all possible sudokus.
     */
@@ -78,8 +81,8 @@ object SudokuGenerator:
             override def hasNext: Boolean =
                if isSolution then hasValue
                else if current.isEmpty || !current.get.hasNext then proceed()
-                  else if !childIterator.hasNext then false
-                  else true
+               else if !childIterator.hasNext then false
+               else true
 
             override def next(): Sudoku =
                if isSolution then
@@ -88,4 +91,5 @@ object SudokuGenerator:
                else current.get.next()
 
          }
+
       iterateIntern(Seq.iterate((0, true), 81)((i, _) => (i + 1, true)), 1, getValidSudoku)

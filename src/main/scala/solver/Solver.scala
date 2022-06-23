@@ -9,6 +9,7 @@ trait Solver(sudoku: Sudoku):
 
    /**
     * Simply solve this solvers sudoku.
+    *
     * @return a solved sudoku as Some, if there is any, otherwise None.
     */
    def solve: Option[Sudoku]

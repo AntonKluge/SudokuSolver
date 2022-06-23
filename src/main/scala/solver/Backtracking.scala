@@ -22,7 +22,7 @@ class Backtracking(sudoku: Sudoku) extends Solver(sudoku) :
          else if sudokuInner.getField(field) != 0 then
             nextField(field + 1, sudokuInner) // skip clue fields.
          else
-            (1 to 9).foreach { n => // try out every possibility ..
+            1 to 9 foreach { n => // try out every possibility ..
                val newSudoku = sudokuInner.updated(field, n)
                if newSudoku.isValid then // .. and if it is valid jump next layer.
                   val ret = nextField(field + 1, newSudoku)

@@ -1,7 +1,7 @@
 package sudoku
 
-import scala.util.Random
 import solver.DancingLinks
+import scala.util.Random
 
 /**
  * A utility class for sudokus which saves and manipulates a given sudoku in array form

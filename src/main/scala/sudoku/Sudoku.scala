@@ -21,30 +21,71 @@ case class Sudoku(sudoku: Array[Int]):
 
    def getField(field: Int): Int = sudoku(field)
 
-   def isRowValid(row: Int): Boolean = validCollection(Iterator.from(sudoku.slice(row * 9, row * 9 + 9)))
+   def isRowValid(row: Int): Boolean = validCollection(getRow(row))
 
-   def isColumnValid(column: Int): Boolean = validCollection(sudoku.drop(column).sliding(1, 9).map(_ (0)))
+   def isColumnValid(column: Int): Boolean = validCollection(getColumn(column))
 
    def isBoxValid(box: Int): Boolean = validCollection(this.getBox(box))
 
-   def getBox(box: Int): Iterator[Int] = (box match
+   private def extractBox(box: Int, sudoku: Array[Int]): Array[Int] = (box match
       case 0 | 1 | 2 => sudoku.drop(box * 3)
       case 3 | 4 | 5 => sudoku.drop(27 + (box - 3) * 3)
       case 6 | 7 | 8 => sudoku.drop(54 + (box - 6) * 3)
-      ).sliding(3, 9).take(3).flatten
+      ).sliding(3, 9).take(3).flatten.toSeq.toArray
 
-   def isValid: Boolean = (0 to 8).forall(n => isRowValid(n) && isColumnValid(n) && isBoxValid(n))
+   private def extractBox2(box: Int, sudoku: Array[(Int, Int)]): Array[(Int, Int)] = (box match
+      case 0 | 1 | 2 => sudoku.drop(box * 3)
+      case 3 | 4 | 5 => sudoku.drop(27 + (box - 3) * 3)
+      case 6 | 7 | 8 => sudoku.drop(54 + (box - 6) * 3)
+      ).sliding(3, 9).take(3).flatten.toSeq.toArray
+
+   def getBox(box: Int): Array[Int] =
+      extractBox(box, sudoku)
+
+   def getIndexedBox(box: Int): Array[(Int, Int)] =
+      extractBox2(box, sudoku.zipWithIndex)
+
+   private def extractColumn(column: Int, sudoku: Array[Int]): Array[Int] =
+      sudoku.drop(column).sliding(1, 9).map(_ (0)).toArray
+
+   private def extractColumn2(column: Int, sudoku: Array[(Int, Int)]): Array[(Int, Int)] =
+      sudoku.drop(column).sliding(1, 9).map(_ (0)).toArray
+
+   def getColumn(column: Int): Array[Int] =
+      extractColumn(column, sudoku)
+
+   def getIndexedColumn(column: Int): Array[(Int, Int)] =
+      extractColumn2(column, sudoku.zipWithIndex)
+
+   private def extractRow[A](row: Int, sudoku: Array[A]): Array[A] =
+      sudoku.slice(row * 9, row * 9 + 9)
+
+   def getRow(row: Int): Array[Int] =
+      extractRow(row, sudoku)
+
+   def getIndexedRow(row: Int): Array[(Int, Int)] =
+      extractRow(row, sudoku.zipWithIndex)
+
+   def isValid: Boolean =
+      0 to 8 forall(n => isRowValid(n) && isColumnValid(n) && isBoxValid(n))
+
+   def isSolved: Boolean =
+      isValid && !sudoku.contains(0)
 
    /**
     * Checks of every none zero element in the given collection only occurs once.
     * @param partSudoku is a collection, probably a part of a sudoku to check.
     * @return if the collection is unique, in the context of sudokus if its valid.
     */
-   private def validCollection(partSudoku: Iterator[Int]): Boolean =
+   private def validCollection(partSudoku: Array[Int]): Boolean =
       val mSet = scala.collection.mutable.Set[Int]()
       partSudoku.forall(x => if x == 0 then true else if mSet(x) then false else {mSet += x; true})
 
-   def updated(field: Int, value: Int): Sudoku = Sudoku(sudoku.updated(field, value))
+   def updated(field: Int, value: Int): Sudoku =
+      Sudoku(sudoku.updated(field, value))
+
+   def updated(row: Int, column: Int, value: Int): Sudoku =
+      Sudoku(sudoku.updated(row * 9 + column, value))
 
    def getGrid: Array[Int] = sudoku
 

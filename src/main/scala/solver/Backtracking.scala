@@ -17,16 +17,15 @@ class Backtracking(sudoku: Sudoku) extends Solver(sudoku) :
     */
    override def solve: Option[Sudoku] =
       def nextField(field: Int, sudokuInner: Sudoku): Option[Sudoku] =
-         if field == 81 then // if field 81 was called there must be 80 valid fields, so solved.
+         if field == -1 then // if field 81 was called there must be 81 valid fields, so solved.
             Some(sudokuInner)
-         else if sudokuInner.getField(field) != 0 then
-            nextField(field + 1, sudokuInner) // skip clue fields.
-         else
-            1 to 9 foreach { n => // try out every possibility ..
-               val newSudoku = sudokuInner.updated(field, n)
-               if newSudoku.isValid then // .. and if it is valid jump next layer.
-                  val ret = nextField(field + 1, newSudoku)
-                  if ret.isDefined then return ret
-            }
+         else if !sudokuInner.isValid then 
             None
-      nextField(0, sudoku) // starting in the first field.
+         else if sudokuInner.getField(field) != 0 then
+            nextField(field - 1, sudokuInner) // skip clue fields.
+         else
+            (1 to 9).foldLeft (Option.empty) { (opt, n) => opt match
+               case Some(s) => Some(s)
+               case None => nextField(field - 1, sudokuInner.updated(field, n))
+            }
+      nextField(80, sudoku) // starting in the first field.
